@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Sample SAM Template for api-teste
+
+  '
+Globals:
+  Function:
+    Timeout: 100
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+Resources:
+  NetCodeWebAPIServerless:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: /Users/rafaelfirmino/workspace/poc/api-teste/src
+      DockerTag: dotnet8-v1
+      Dockerfile: Dockerfile
+      SamResourceId: NetCodeWebAPIServerless
+    Properties:
+      Description: A simple example includes a .NET Core WebAPI App with DynamoDB
+        table.
+      PackageType: Image
+      MemorySize: 1024
+      Architectures:
+      - arm64
+      Events:
+        ProxyResource:
+          Type: HttpApi
+          Properties:
+            PayloadFormatVersion: '2.0'
+            Path: /{proxy+}
+            Method: ANY
+        RootResource:
+          PayloadFormatVersion: '2.0'
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+      ImageUri: netcodewebapiserverless:dotnet8-v1
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/
